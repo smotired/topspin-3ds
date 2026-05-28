@@ -43,6 +43,8 @@ struct BoxCollider {
     Vec2 offset;
     // Width and height of the box
     Vec2 size;
+    // Solidity. 0 = solid, 1 = zone, 2 = semisolid (only collide from top)
+    char type;
 };
 #define C_BOXCOLLIDER 4
 
@@ -86,10 +88,8 @@ struct Collectable {
 
 // Falling platforms just store if they are triggered or not
 // Component ID: 9
-struct Platform {
-    // If the platform has been triggered
-    bool triggered;
-};
+// Just as a tag. When triggered, remove collider and add rigidbody.
+
 #define C_PLATFORM 9
 
 // Stores all data about a player
@@ -104,6 +104,7 @@ struct Player {
     // 5 - crouching
     // 6 - preparing dash
     // 7 - dash
+    // 8 - dead
     char state;
     // If dashing, this is the normalized vector we are dashing toward
     Vec2 dashDirection;
@@ -112,10 +113,8 @@ struct Player {
 
 // Defines an object as an enemy
 // Component ID: 11
-struct Enemy {
-    // If the enemy has been killed and can no longer hurt the player
-    bool slain;
-};
+// Just a tag
+
 #define C_ENEMY 11
 
 // Bumble definition
@@ -181,5 +180,13 @@ struct AudioSource {
 };
 #define C_AUDIO 16
 
+// Tells particles and dead enemies to be destroyed when offscreen
+// Component ID: 17
+struct DestroyOffscreen {
+    // Circumscribed radius of the object to ensure that it's fully offscreen when destroyed
+    float radius;
+};
+#define C_DESTROYOFFSCREEN 17
+
 // Bit flags that define what components an entity has or a system uses
-typedef unsigned short Signature;
+typedef unsigned int Signature;
