@@ -1,2 +1,2 @@
-# topspin-3ds
-A nintendo 3DS port for Topspin
+# Topspin 3DS
+Topspin is a silly little platformer game I made in middle school. This is an attempt at porting it to the Nintendo 3DS.
