@@ -11,6 +11,9 @@
 // This number is used to initialize many arrays so it should be kept relatively small.
 #define MAX_ENTITIES 4096
 
+// Signature of a destroyed entity (which limits unique component count to 31)
+#define NULL_SIGNATURE 0xFFFFFFFF
+
 // The EntityManager is in charge of adding and removing entities,
 // and managing which components an entity has.
 // Should only be used by the ECS object.
@@ -24,7 +27,7 @@ typedef struct {
     Entity entityCount;
     // List of signatures corresponding to entity IDs. If a component's bit is set,
     // the entity has that component.
-    // If a signature is 0, that means the entity doesn't exist.
+    // If a signature is -1 (or 0xFFFFFFFF), that means the entity doesn't exist.
     Signature entitySignatures[MAX_ENTITIES];
 } EntityManager;
 
@@ -38,7 +41,7 @@ Entity EntityManager_CreateEntity(EntityManager* manager);
 void EntityManager_DestroyEntity(EntityManager* manager, Entity entity);
 
 // Returns true if the entity exists and has components
-bool EntityManager_EntityExists(EntityManager* manager, Entity entity);
+int EntityManager_EntityExists(EntityManager* manager, Entity entity);
 
 // Update an EntityManager's signature to include a component and return the updated signature.
 Signature EntityManager_ApplyComponent(EntityManager* manager, Entity entity, ComponentID component);
@@ -49,7 +52,7 @@ Signature EntityManager_DiscardComponent(EntityManager* manager, Entity entity, 
 // hopefully the signature makes it clear that it doesn't actually create a component
 
 // Returns true if the entity has a component.
-bool EntityManager_HasComponent(EntityManager* manager, Entity entity, ComponentID component);
+int EntityManager_HasComponent(EntityManager* manager, Entity entity, ComponentID component);
 
 // An individual list of components
 typedef struct {
@@ -68,7 +71,7 @@ typedef struct {
 // The component manager tracks references to entities' components.
 // Should only be used by the ECS object.
 typedef struct {
-    ComponentList* componentLists[COMPONENT_TYPE_COUNT];
+    ComponentList componentLists[COMPONENT_TYPE_COUNT];
 } ComponentManager;
 
 // Initialize a ComponentManager and create lists for each component type.
@@ -103,8 +106,7 @@ typedef struct {
     BaseSystem systems[SYSTEM_TYPE_COUNT];
 } SystemManager;
 
-// Initialize the given system with the given signature, and populate with the entities tracked.
-// Return a reference to the system.
+// Initialize the given system with the given signature.
 BaseSystem* SystemManager_InitSystem(SystemManager* manager, SystemID id, Signature signature);
 
 // When an entity's signature is changed, revalidate all systems to decide if it should be tracked.
@@ -134,7 +136,7 @@ Entity CreateEntity();
 void DestroyEntity(Entity entity);
 
 // Return true if an entity exists and has components
-bool EntityExists(Entity entity);
+int EntityExists(Entity entity);
 
 // Add a component to the specified entity and return a pointer to the component.
 void* AddComponent(Entity entity, ComponentID component);
@@ -146,10 +148,13 @@ void RemoveComponent(Entity entity, ComponentID component);
 void* GetComponent(Entity entity, ComponentID component);
 
 // Return true if the entity has the specified component.
-bool HasComponent(Entity entity, ComponentID component);
+int HasComponent(Entity entity, ComponentID component);
 
-// Set up and get a reference to a system.
+// Set up and get a reference to a system. Populates with entities that already have that signature.
 BaseSystem* InitSystem(SystemID system, Signature signature);
+
+// Cleanup to avoid memory leaks
+void ECSCleanup();
 
 // Macros for getting specific components from entities to reduce repetition
 #define GetTransform(e) ((Transform*)GetComponent(e, C_TRANSFORM))
