@@ -14,78 +14,6 @@
 // Signature of a destroyed entity (which limits unique component count to 31)
 #define NULL_SIGNATURE 0xFFFFFFFF
 
-// The EntityManager is in charge of adding and removing entities,
-// and managing which components an entity has.
-// Should only be used by the ECS object.
-typedef struct {
-    // Stack of which entity IDs are unused, to keep IDs tightly packed.
-    // Entity IDs act as an index into signature or component arrays.
-    Entity availableIds[MAX_ENTITIES];
-    // Functions as a pointer to the top of the availableIDs stack.
-    // Using the latest freed ID for the next ID should ensure that the
-    // max ID is always less than or equal to the total amount of created entities
-    Entity entityCount;
-    // List of signatures corresponding to entity IDs. If a component's bit is set,
-    // the entity has that component.
-    // If a signature is -1 (or 0xFFFFFFFF), that means the entity doesn't exist.
-    Signature entitySignatures[MAX_ENTITIES];
-} EntityManager;
-
-// Initialize an EntityManager and the ID and Signature lists.
-void EntityManager_Init(EntityManager* manager);
-
-// Create and return an entity.
-Entity EntityManager_CreateEntity(EntityManager* manager);
-
-// Destroy an entity from the list.
-void EntityManager_DestroyEntity(EntityManager* manager, Entity entity);
-
-// Returns true if the entity exists and has components
-int EntityManager_EntityExists(EntityManager* manager, Entity entity);
-
-// Update an EntityManager's signature to include a component and return the updated signature.
-Signature EntityManager_ApplyComponent(EntityManager* manager, Entity entity, ComponentID component);
-// hopefully the signature makes it clear that it doesn't actually create a component
-
-// Update an EntityManager's signature to not include a component and return the updated signature.
-Signature EntityManager_DiscardComponent(EntityManager* manager, Entity entity, ComponentID component);
-// hopefully the signature makes it clear that it doesn't actually create a component
-
-// Returns true if the entity has a component.
-int EntityManager_HasComponent(EntityManager* manager, Entity entity, ComponentID component);
-
-// An individual list of components
-typedef struct {
-    // Size in bytes of individual components in this list
-    unsigned char componentSize;
-    // Pointer to list of component structs on heap
-    void* list;
-    // Amount of entities that have this component
-    Entity count;
-    // Mapping of component list indices to entity IDs, used for tight packing
-    Entity indexToEntity[MAX_ENTITIES];
-    // Mapping of entity IDs to component list indices, used for tight packing
-    Entity entityToIndex[MAX_ENTITIES];
-} ComponentList;
-
-// The component manager tracks references to entities' components.
-// Should only be used by the ECS object.
-typedef struct {
-    ComponentList componentLists[COMPONENT_TYPE_COUNT];
-} ComponentManager;
-
-// Initialize a ComponentManager and create lists for each component type.
-void ComponentManager_Init(ComponentManager* manager);
-
-// Add a component to an entity and return a pointer to the component.
-void* ComponentManager_AddComponent(ComponentManager* manager, Entity entity, ComponentID component);
-
-// Remove a component from an entity
-void ComponentManager_RemoveComponent(ComponentManager* manager, Entity entity, ComponentID component);
-
-// Return a pointer to an entity's instance of a component.
-void* ComponentManager_GetComponent(ComponentManager* manager, Entity entity, ComponentID component);
-
 // Common information to all systems. Each system should keep a reference to this object.
 typedef struct {
     // Defines what components this system cares about. All entities that
@@ -99,37 +27,14 @@ typedef struct {
     Entity entityCount;
 } BaseSystem;
 
-// References which entities are tracked by which systems.
-// Should only be used by the ECS object.
-typedef struct {
-    // A list of base system objects.
-    BaseSystem systems[SYSTEM_TYPE_COUNT];
-} SystemManager;
+// Methods for each required function of the ECS
 
-// Initialize the given system with the given signature.
-BaseSystem* SystemManager_InitSystem(SystemManager* manager, SystemID id, Signature signature);
-
-// When an entity's signature is changed, revalidate all systems to decide if it should be tracked.
-// When an entity is destroyed, this should be called with a signature of zero to remove from all systems.
-void SystemManager_EntityUpdated(SystemManager* manager, Entity entity, Signature entitySignature);
-// This does not work if a system tracks entities with no components but that shouldn't be allowed anyway
-
-// Facilitates communcation between the three systems.
-typedef struct {
-    // The EntityManager tracks which entities exist and what components they have.
-    EntityManager entityManager;
-    // The ComponentManager stores the actual component data for entities.
-    ComponentManager componentManager;
-    // The SystemManager stores what components each system uses and what entities have all those components.
-    SystemManager systemManager;
-} ECS;
-
-// Global methods for the ECS, assuming a singleton global ECS exists somewhere.
-
-// Initalize the full ECS
+// Initalize the full ECS.
+// Error 5 - Cannot allocate memory for component lists.
 void ECSInit();
 
 // Create an entity in the ECS
+// Error 1 - There are more than the maximum number of entities.
 Entity CreateEntity();
 
 // Destroy an entity in the ECS
@@ -139,19 +44,27 @@ void DestroyEntity(Entity entity);
 int EntityExists(Entity entity);
 
 // Add a component to the specified entity and return a pointer to the component.
+// Error 3 - The entity does not exist
+// Error 7 - The entity already has the component (still returns the component)
+// Adding a tag component returns null with no error
 void* AddComponent(Entity entity, ComponentID component);
 
 // Remove a component from the specified entity.
+// Error 3 - The entity does not exist
 void RemoveComponent(Entity entity, ComponentID component);
 
 // Get a pointer to the specified component on the entity.
+// Error 3 - The entity does not exist
+// Error 6 - The provided component is a tag (no data to get)
+// Error 4 - The entity does not have the component
 void* GetComponent(Entity entity, ComponentID component);
 
 // Return true if the entity has the specified component.
+// Error 3 - The entity does not exist
 int HasComponent(Entity entity, ComponentID component);
 
 // Set up and get a reference to a system. Populates with entities that already have that signature.
-BaseSystem* InitSystem(SystemID system, Signature signature);
+BaseSystem* InitSystem(SystemID id, Signature signature);
 
 // Cleanup to avoid memory leaks
 void ECSCleanup();
