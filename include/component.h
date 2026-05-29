@@ -66,6 +66,8 @@ typedef struct {
     Vec2 velocity;
     // If the object should be affected by gravity
     int useGravity;
+    // If the object is immobile
+    int immobile;
 } Rigidbody;
 #define C_RIGIDBODY 6
 
