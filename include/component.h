@@ -1,7 +1,7 @@
 /// Contains definitions for components.
 #pragma once;
 
-#include <vector.h>
+#include "vec2.h"
 
 // ID of an entity.
 // Importantly: the id 0 is reserved.
@@ -23,7 +23,7 @@ typedef struct {
     // The actual sprite
     char spr;
     // If the sprite should be flipped horizontally
-    bool flipX;
+    int flipX;
 } Sprite;
 #define C_SPRITE 2
 
@@ -65,7 +65,7 @@ typedef struct {
     // How quickly the object is moving
     Vec2 velocity;
     // If the object should be affected by gravity
-    bool useGravity;
+    int useGravity;
 } Rigidbody;
 #define C_RIGIDBODY 6
 
@@ -81,7 +81,7 @@ typedef struct {
 // Component ID: 8
 typedef struct {
     // If the object has been collected and is currently playing the animation
-    bool collected;
+    int collected;
     // Type of the collectable. 0 = coin, 1-3 = types of gem, 4 = star
     char type;
 } Collectable;
@@ -173,9 +173,9 @@ typedef struct {
     // ID of the audio clip
     char clip;
     // If the clip is currently playing
-    bool playing;
+    int playing;
     // If the clip should loop
-    bool loop;
+    int loop;
     // Current play time of the clip
     float time;
 } AudioSource;
