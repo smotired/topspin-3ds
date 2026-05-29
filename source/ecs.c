@@ -233,10 +233,12 @@ void ComponentManager_RemoveComponent(Entity entity, ComponentID component) {
     if (i == 0) return;
     // Replace this index with whatever's at the back to keep it tightly packed
     int back = --(list->count);
-    memcpy(CLP(list, i), CLP(list, back), list->componentSize);
-    list->indexToEntity[i] = list->indexToEntity[back];
+    if (i != back) {
+        memcpy(CLP(list, i), CLP(list, back), list->componentSize);
+        list->indexToEntity[i] = list->indexToEntity[back];
+        list->entityToIndex[list->indexToEntity[i]] = i;
+    }
     list->indexToEntity[back] = 0;
-    list->entityToIndex[list->indexToEntity[i]] = i;
     list->entityToIndex[entity] = 0;
 }
 
@@ -302,8 +304,10 @@ void SystemEntityUpdated(BaseSystem* system, Entity entity, Signature entitySign
     else if (index && !shouldTrack) {
         // Move the last tracked element into this spot to keep it tight
         int back = --(system->entityCount);
-        system->tracked[index] = system->tracked[back];
-        system->entityToIndex[system->tracked[index]] = index;
+        if (index != back) {
+            system->tracked[index] = system->tracked[back];
+            system->entityToIndex[system->tracked[index]] = index;
+        }
         system->tracked[back] = 0;
         system->entityToIndex[entity] = 0;
     }
