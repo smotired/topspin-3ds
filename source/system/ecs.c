@@ -324,6 +324,7 @@ void SystemManager_EntityUpdated(Entity entity, Signature entitySignature) {
 
 void ECSInit() {
     ecsErr = 0;
+    ECSCleanup();
     EntityManager_Init();
     ComponentManager_Init();
 }
