@@ -57,7 +57,7 @@ typedef struct {
 // References which entities are tracked by which systems.
 // Should only be used by the ECS object.
 typedef struct {
-    // A list of base system objects.
+    // A list of base core objects.
     BaseSystem systems[SYSTEM_TYPE_COUNT + 1]; // 0 is unused
 } SystemManager;
 
@@ -277,9 +277,9 @@ void ComponentManager_Cleanup() {
 
 //---------------- SystemManager methods
 
-// Initializes a base system with no entities
+// Initializes a base core with no entities
 BaseSystem* SystemManager_InitSystem(SystemID id, Signature signature) {
-    // Initialize the system and return a pointer
+    // Initialize the core and return a pointer
     BaseSystem* system = &sm.systems[id];
     system->signature = signature;
     system->entityCount = 1; // 0 is reserved
@@ -290,7 +290,7 @@ BaseSystem* SystemManager_InitSystem(SystemID id, Signature signature) {
     return system;
 }
 
-// Signals to a specific system that an entity's components changed and it should start/stop tracking it
+// Signals to a specific core that an entity's components changed and it should start/stop tracking it
 void SystemEntityUpdated(BaseSystem* system, Entity entity, Signature entitySignature) {
     // Determine if the entity is tracked and if it should be tracked
     int index = system->entityToIndex[entity];
@@ -391,7 +391,7 @@ int HasComponent(Entity entity, ComponentID component) {
 
 BaseSystem* InitSystem(SystemID id, Signature signature) {
     ecsErr = 0;
-    // Initialize the system
+    // Initialize the core
     BaseSystem* system = SystemManager_InitSystem(id, signature);
     // Go through and track all existing entities if needed
     for (int i = 1; i < MAX_ENTITIES; i++)
