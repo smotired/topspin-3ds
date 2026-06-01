@@ -58,6 +58,8 @@ typedef struct {
     Vec2 offset;
     // Radius of the circle
     float radius;
+    // Solidity. 0 = solid, 1 = zone, 2 = semisolid (only collide from top)
+    ColliderType type;
 } CircleCollider;
 #define C_CIRCLECOLLIDER 5
 
@@ -70,6 +72,10 @@ typedef struct {
     // 1 - immovable
     // 2 - unaffected by gravity
     unsigned char flags;
+    // The 16x16 spatial partition the entity is currently in, used for broad phase collision checking
+    // 1-indexed in both dimensions and both directions from 0 for clarity.
+    // So the partition (1, 1) covers the range [0, 16) in both x and y, and the partition (-1, -1) covers the range [-16, 0) in both x and y, etc.
+    Vec2Int partition;
 } Rigidbody;
 #define C_RIGIDBODY 6
 
