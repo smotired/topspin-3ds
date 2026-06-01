@@ -1,7 +1,7 @@
 /// Declarations for each type of system.
 #pragma once
 
-#include "vec2.h"
+#include "smath.h"
 #include "component.h"
 
 typedef struct BaseSystem;
@@ -30,7 +30,7 @@ extern unsigned char collisionEventCount;
 typedef struct {
     Entity object;
      // if it's colliding with the goop tilemap instead of the ground tilemap
-    int goop;
+    bool goop;
 } TilemapCollisionEvent;
 
 extern TilemapCollisionEvent tilemapCollisionEvents[MAX_EVENTS];
