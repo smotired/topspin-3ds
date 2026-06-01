@@ -21,7 +21,7 @@ typedef struct {
 // Component ID: 2
 typedef struct {
     // The actual sprite
-    char spr;
+    unsigned char spr;
     // If the sprite should be flipped horizontally
     bool flipX;
 } Sprite;
@@ -81,15 +81,15 @@ typedef struct {
 } Health;
 #define C_HEALTH 7
 
-// Coins, gems, and stars have animations
+// Coins, gems, and stars have similar properties
 // Component ID: 8
 typedef struct {
     // If the object has been collected and is currently playing the animation
     bool collected;
-    // Type of the collectable. 0 = coin, 1-3 = types of gem, 4 = star
+    // Type of the collectible. 0 = coin, 1-3 = types of gem, 4 = star
     unsigned char type;
-} Collectable;
-#define C_COLLECTABLE 8
+} Collectible;
+#define C_COLLECTIBLE 8
 
 // Falling platforms just store if they are triggered or not
 // Component ID: 9

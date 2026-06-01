@@ -36,6 +36,8 @@ typedef struct {
 extern TilemapCollisionEvent tilemapCollisionEvents[MAX_EVENTS];
 extern unsigned char tilemapCollisionEventCount;
 
+extern BaseSystem* physicsSystem;
+
 // Tick update for PhysicsSystem
 // Move objects with rigidbodies
 // Loop through the world and other rigidbodies to find collisions
@@ -48,6 +50,21 @@ void PhysicsSystemUpdate(float dt);
 // does not need a collider (particles should be able to be affected by gravity)
 
 // ---------------- AnimationSystem
+
+typedef unsigned int AnimationID;
+
+// Represents an animation finishing and possibly looping
+typedef struct {
+    // The entity whose animation finished
+    Entity entity;
+    // The ID of the animation that finished
+    AnimationID animation;
+} AnimationFinishEvent;
+
+extern AnimationFinishEvent animationFinishEvents[MAX_EVENTS];
+extern unsigned char animationFinishEventCount;
+
+extern BaseSystem* animationSystem;
 
 // Tick update for AnimationSystem
 void AnimationSystemUpdate(float dt);
@@ -65,11 +82,13 @@ typedef struct {
 extern EntityKilledEvent entityKilledEvents[MAX_EVENTS];
 extern unsigned char entityKilledEventCount;
 
+extern BaseSystem* entityDamageSystem;
+
 // Tick update for EntityDamageSystem
 void EntityDamageSystemUpdate(float dt);
 
 #define S_ENTITYDAMAGE 3
-#define SIGNATURE_ENITTYDAMAGE (SG(C_HEALTH))
+#define SIGNATURE_ENTITYDAMAGE (SG(C_HEALTH))
 
 // ---------------- Extra stuff
 
