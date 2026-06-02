@@ -4,6 +4,7 @@
 #include "../../include/systems.h"
 #include "../../include/ecs.h"
 #include <stdlib.h>
+#include <math.h>
 
 CollisionEvent collisionEvents[MAX_EVENTS];
 unsigned char collisionEventCount;
@@ -17,9 +18,12 @@ BaseSystem* physicsSystem;
 #define GRAVITY 9.8f
 
 /// Method to find the collision between two entities with colliders in adjacent spatial partitions.
-bool FindCollision(Entity e1, Entity e2, Vec2* collisionPoint) {
+bool FindCollision(Entity e1, Entity e2, Vec2* collisionPoint, Vec2* normal, float* penetration) {
     collisionPoint->x = 0;
     collisionPoint->y = 0;
+    normal->x = 0;
+    normal->y = 0;
+    *penetration = 0;
 
     // Determine the type of colliders
     if (HasComponent(e1, C_BOXCOLLIDER) && HasComponent(e2, C_BOXCOLLIDER)) {
@@ -38,10 +42,23 @@ bool FindCollision(Entity e1, Entity e2, Vec2* collisionPoint) {
         Vec2 t2Min = v2sub(v2add(t2->pos, c2->offset), t2Half);
         Vec2 t2Max = v2add(t2Min, c2->size);
 
-        // Collision point is the center of the overlap area
+        // Collision happens if both boxes overlap
         if (t1Min.x < t2Max.x && t1Max.x > t2Min.x && t1Min.y < t2Max.y && t1Max.y > t2Min.y) {
+            // Collision point is the center of the overlap area
             collisionPoint->x = (fmax(t1Min.x, t2Min.x) + fmin(t1Max.x, t2Max.x)) / 2;
             collisionPoint->y = (fmax(t1Min.y, t2Min.y) + fmin(t1Max.y, t2Max.y)) / 2;
+
+            // Collision normal is the normal of the face on c2 with the least penetration
+            Vec2 penBL = v2sub(*collisionPoint, t2Min);
+            Vec2 penTR = v2sub(t2Min, *collisionPoint);
+            float p = min(min(penBL.x, penTR.x), min(penBL.y, penTR.y)); // epic shortcut
+            if      (p == penBL.x) *normal = (Vec2) { -1,  0 };
+            else if (p == penTR.x) *normal = (Vec2) {  1,  0 };
+            else if (p == penBL.y) *normal = (Vec2) {  0, -1 };
+            else                   *normal = (Vec2) {  0,  1 };
+            // p is correct because box-box collisions give us the exact midpoint
+            *penetration = p;
+
             return true;
         }
 
@@ -68,10 +85,18 @@ bool FindCollision(Entity e1, Entity e2, Vec2* collisionPoint) {
         closestPoint.y = fmax(t2Min.y, fmin(c1Center.y, t2Max.y));
 
         // Collision if the closest point is within the circle radius
-        float distSq = v2sqmag(v2sub(closestPoint, c1Center));
+        Vec2 offset = v2sub(closestPoint, c1Center);
+        float distSq = v2sqmag(offset);
         if (distSq < c1->radius * c1->radius) {
-            collisionPoint->x = closestPoint.x;
-            collisionPoint->y = closestPoint.y;
+            // Collision normal is direction from the circle center to the closest point on the box
+            *normal = v2scale(v2norm(offset), -1); // make sure it points away from c2
+
+            // Penetration is half the distance between box point and circle edge
+            float dist = sqrtf(distSq);
+            *penetration = 0.5f * (c1->radius - dist);
+
+            // If collision point is the center, then it's the closest point plus that penetration distance along the normal
+            *collisionPoint = v2add(closestPoint, v2scale(*normal, -(*penetration)));
             return true;
         }
 
@@ -155,10 +180,11 @@ void PhysicsSystemUpdate(float dt) {
             if (abs(r1->partition.x - r2->partition.x) > 1 || abs(r1->partition.y - r2->partition.y) > 1) continue;
 
             // Find the collision point
-            Vec2 collisionPoint;
-            bool collided = FindCollision(e1, e2, &collisionPoint);
+            Vec2 collisionPoint, collisionNormal;
+            float penetration;
+            bool collided = FindCollision(e1, e2, &collisionPoint, &collisionNormal, &penetration);
             if (collided && collisionEventCount < MAX_EVENTS) {
-                collisionEvents[collisionEventCount++] = (CollisionEvent){ e1, e2, collisionPoint };
+                collisionEvents[collisionEventCount++] = (CollisionEvent){ e1, e2, collisionPoint, collisionNormal, penetration };
             }
         }
     }
@@ -203,90 +229,42 @@ void PhysicsSystemUpdate(float dt) {
 
         // Handle semisolid collisions, having set e2 to be the semisolid
         if (type2 == COL_SEMISOLID) {
-            // Only resolve if e1's collider bottom is above the top face and e1 is moving downward
             float c1Bottom = cb1 != NULL ?
                 t1->pos.y + cb1->offset.y - cb1->size.y * 0.5f :
                 t1->pos.y + cc1->offset.y - cc1->radius;
             float topFace = t2->pos.y + cb2->offset.y + cb2->size.y * 0.5f;
-            if (c1Bottom < topFace + 0.1f && r1->velocity.y < 0) {
+            // Collision if object is moving downward and the collision normal is mostly pointing up
+            if (v2dot(e->normal, (Vec2){ 0, 1 }) >= 0.707f && r1->velocity.y < 0) {
                 // Update t1 position such that the collider bottom is exactly on the top face
                 float distance = topFace - c1Bottom;
                 t1->pos.y += distance;
                 r1->velocity.y = 0;
             }
-            // if we include collision normal in events it would be easier to just check if the normal points upward enough
         }
 
         // Handle solid collisions
         else {
-            Vec2 normal; // Points away from C2
-            float p; // Penetration, how far the collision point is into each object. We will move each object apart by this distance along the normal
-
-            // Honestly it might have been beneficial to calculate normal when doing the collision.
-            // Will move it there if we need it in any other events otherwise it's better here
-
-            // If c2 is a box and c1 is a box
-            if (cb1 != NULL && cb2 != NULL) {
-                // Collision point should be close to the edges so find the axis with the least overlap
-                Vec2 h = v2scale(cb2->size, 0.5f);
-                float pL = e->position.x - (t2->pos.x + cb2->offset.x - h.x);
-                float pR = (t2->pos.x + cb2->offset.x + h.x) - e->position.x;
-                float pB = e->position.y - (t2->pos.y + cb2->offset.y - h.y);
-                float pT = (t2->pos.y + cb2->offset.y + h.y) - e->position.y;
-                p = min(min(pL, pR), min(pB, pT)); // shortcut is inaccurate if penetration distance is the same in 2 directions but that would cause issues w/o the shortcut anyway
-                if      (p == pL) normal = (Vec2) { -1,  0 };
-                else if (p == pR) normal = (Vec2) {  1,  0 };
-                else if (p == pB) normal = (Vec2) {  0, -1 };
-                else              normal = (Vec2) {  0,  1 };
-                // p is correct because box-box collisions give us the exact midpoint
-            }
-            // If c1 is a box and c2 is a circle
-            else if (cb1 != NULL) {
-                // Collision normal is direction from the circle center to the closest point on the box, which is our collision poisition
-                Vec2 center = v2add(t2->pos, cc2->offset);
-                Vec2 offset = v2sub(e->position, center);
-                normal = v2norm(offset);
-
-                // Since the collision point is on the box, penetration for each is half of the distance to the circle
-                p = cc2->radius - v2mag(offset);
-            }
-            // If c2 is a box and c1 is a circle
-            else if (cb2 != NULL) {
-                Vec2 center = v2add(t1->pos, cc1->offset);
-                Vec2 offset = v2sub(e->position, center);
-                normal = v2scale(v2norm(offset), -1); // flip so it points away from obj2
-                p = cc1->radius - v2mag(offset);
-            }
-            // If both are circles
-            else {
-                // Collision point should be right in the middle
-                Vec2 center2 = v2add(t2->pos, cc2->offset);
-                Vec2 offset = v2sub(e->position, center2);
-                normal = v2norm(offset);
-                p = v2mag(offset);
-            }
-
             // Move objects backward on the collision normal such that they don't overlap
             bool imm1 = r1->flags & 1;
             bool imm2 = r2->flags & 1;
             if (!imm1 && !imm2) {
-                t1->pos = v2add(t1->pos, v2scale(normal, p));
-                t2->pos = v2add(t2->pos, v2scale(normal, -p));
+                t1->pos = v2add(t1->pos, v2scale(e->normal, e->penetration));
+                t2->pos = v2add(t2->pos, v2scale(e->normal, -e->penetration));
             }
             else if (!imm1)
-                t1->pos = v2add(t1->pos, v2scale(normal, 2 * p));
+                t1->pos = v2add(t1->pos, v2scale(e->normal, 2 * e->penetration));
             else if (!imm2)
-                t2->pos = v2add(t2->pos, v2scale(normal, 2 * -p));
+                t2->pos = v2add(t2->pos, v2scale(e->normal, 2 * -e->penetration));
 
             // Update velocities to remove the component pointing toward the normal, which should assume that entities always fully stop
             // in that direction when colliding.
             // The normal should be pointing away from object 2float dot1 = v2dot(r1->velocity, normal);
-            float dot1 = v2dot(r1->velocity, normal);
+            float dot1 = v2dot(r1->velocity, e->normal);
             if (dot1 < 0)
-                r1->velocity = v2sub(r1->velocity, v2scale(normal, dot1));
-            float dot2 = v2dot(r2->velocity, normal);
+                r1->velocity = v2sub(r1->velocity, v2scale(e->normal, dot1));
+            float dot2 = v2dot(r2->velocity, e->normal);
             if (dot2 > 0)
-                r2->velocity = v2sub(r2->velocity, v2scale(normal, dot2));
+                r2->velocity = v2sub(r2->velocity, v2scale(e->normal, dot2));
         }
     }
 }

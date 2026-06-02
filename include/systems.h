@@ -21,6 +21,10 @@ typedef struct {
     Entity object2;
     // Center of the collision point
     Vec2 position;
+    // Collision normal
+    Vec2 normal;
+    // Penetration (how far along the normal the collision point is into each object)
+    float penetration;
 } CollisionEvent;
 
 extern CollisionEvent collisionEvents[MAX_EVENTS];
