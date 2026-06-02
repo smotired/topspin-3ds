@@ -18,12 +18,10 @@ BaseSystem* physicsSystem;
 #define GRAVITY 9.8f
 
 /// Method to find the collision between two entities with colliders in adjacent spatial partitions.
-bool FindCollision(Entity e1, Entity e2, Vec2* collisionPoint, Vec2* normal, float* penetration) {
-    collisionPoint->x = 0;
-    collisionPoint->y = 0;
-    normal->x = 0;
-    normal->y = 0;
-    *penetration = 0;
+bool FindCollision(Entity e1, Entity e2, CollisionEvent* event) {
+    // Update entities
+    event->object1 = e1;
+    event->object2 = e2;
 
     // Determine the type of colliders
     if (HasComponent(e1, C_BOXCOLLIDER) && HasComponent(e2, C_BOXCOLLIDER)) {
@@ -45,19 +43,20 @@ bool FindCollision(Entity e1, Entity e2, Vec2* collisionPoint, Vec2* normal, flo
         // Collision happens if both boxes overlap
         if (t1Min.x < t2Max.x && t1Max.x > t2Min.x && t1Min.y < t2Max.y && t1Max.y > t2Min.y) {
             // Collision point is the center of the overlap area
-            collisionPoint->x = (fmax(t1Min.x, t2Min.x) + fmin(t1Max.x, t2Max.x)) / 2;
-            collisionPoint->y = (fmax(t1Min.y, t2Min.y) + fmin(t1Max.y, t2Max.y)) / 2;
+            event->position.x = (fmax(t1Min.x, t2Min.x) + fmin(t1Max.x, t2Max.x)) / 2;
+            event->position.y = (fmax(t1Min.y, t2Min.y) + fmin(t1Max.y, t2Max.y)) / 2;
 
+            // Penetration distance is the minimum distance to each corner
+            Vec2 penBL = v2sub(event->position, t2Min);
+            Vec2 penTR = v2sub(t2Min, event->position);
+            event->penetration = min(min(penBL.x, penTR.x), min(penBL.y, penTR.y));
+            
             // Collision normal is the normal of the face on c2 with the least penetration
-            Vec2 penBL = v2sub(*collisionPoint, t2Min);
-            Vec2 penTR = v2sub(t2Min, *collisionPoint);
-            float p = min(min(penBL.x, penTR.x), min(penBL.y, penTR.y)); // epic shortcut
-            if      (p == penBL.x) *normal = (Vec2) { -1,  0 };
-            else if (p == penTR.x) *normal = (Vec2) {  1,  0 };
-            else if (p == penBL.y) *normal = (Vec2) {  0, -1 };
-            else                   *normal = (Vec2) {  0,  1 };
-            // p is correct because box-box collisions give us the exact midpoint
-            *penetration = p;
+            if      (event->penetration == penBL.x) event->normal = (Vec2) { -1,  0 };
+            else if (event->penetration == penTR.x) event->normal = (Vec2) {  1,  0 };
+            else if (event->penetration == penBL.y) event->normal = (Vec2) {  0, -1 };
+            else                                    event->normal = (Vec2) {  0,  1 };
+            // that shortcut is only incorrect when the more robust massive if/else tree would also be incorrect
 
             return true;
         }
@@ -89,14 +88,14 @@ bool FindCollision(Entity e1, Entity e2, Vec2* collisionPoint, Vec2* normal, flo
         float distSq = v2sqmag(offset);
         if (distSq < c1->radius * c1->radius) {
             // Collision normal is direction from the circle center to the closest point on the box
-            *normal = v2scale(v2norm(offset), -1); // make sure it points away from c2
+            event->normal = v2scale(v2norm(offset), -1); // make sure it points away from c2
 
             // Penetration is half the distance between box point and circle edge
             float dist = sqrtf(distSq);
-            *penetration = 0.5f * (c1->radius - dist);
+            event->penetration = 0.5f * (c1->radius - dist);
 
-            // If collision point is the center, then it's the closest point plus that penetration distance along the normal
-            *collisionPoint = v2add(closestPoint, v2scale(*normal, -(*penetration)));
+            // If collision point is the center of the overlap, then it's the closest point plus that penetration distance along the normal
+            event->position = v2add(closestPoint, v2scale(event->normal, -event->penetration));
             return true;
         }
 
@@ -112,11 +111,17 @@ bool FindCollision(Entity e1, Entity e2, Vec2* collisionPoint, Vec2* normal, flo
         // Collision if the distance between centers is less than the sum of the radii
         Vec2 c1Center = v2add(t1->pos, c1->offset);
         Vec2 c2Center = v2add(t2->pos, c2->offset);
-        float distSq = v2sqmag(v2sub(c1Center, c2Center));
+        Vec2 offset = v2sub(c1Center, c2Center);
+        float distSq = v2sqmag(offset);
         float radiusSum = c1->radius + c2->radius;
         if (distSq < radiusSum * radiusSum) {
-            collisionPoint->x = (c1Center.x + c2Center.x) / 2;
-            collisionPoint->y = (c1Center.y + c2Center.y) / 2;
+            // Normal points away from C2
+            event->normal = v2norm(offset);
+            // Penetration is half of the overlap amount
+            float dist = sqrtf(distSq);
+            event->penetration = 0.5f * (radiusSum - dist);
+            // Collision point is either radius minus the penetration amount
+            event->position = v2add(c2Center, v2scale(event->normal, c2->radius - event->penetration));
             return true;
         }
 
@@ -179,13 +184,9 @@ void PhysicsSystemUpdate(float dt) {
             // Fails for anything with a collider larger than like 32 or whatever so don't do that
             if (abs(r1->partition.x - r2->partition.x) > 1 || abs(r1->partition.y - r2->partition.y) > 1) continue;
 
-            // Find the collision point
-            Vec2 collisionPoint, collisionNormal;
-            float penetration;
-            bool collided = FindCollision(e1, e2, &collisionPoint, &collisionNormal, &penetration);
-            if (collided && collisionEventCount < MAX_EVENTS) {
-                collisionEvents[collisionEventCount++] = (CollisionEvent){ e1, e2, collisionPoint, collisionNormal, penetration };
-            }
+            // Find the collision point. Writes to the queue regardless and only increments if a collision is found.
+            if (collisionEventCount < MAX_EVENTS && FindCollision(e1, e2, &collisionEvents[collisionEventCount]))
+                collisionEventCount++;
         }
     }
 
