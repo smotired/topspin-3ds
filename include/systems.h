@@ -53,6 +53,17 @@ void PhysicsSystemUpdate(float dt);
 #define SIGNATURE_PHYSICS (SG(C_TRANSFORM) | SG(C_RIGIDBODY))
 // does not need a collider (particles should be able to be affected by gravity)
 
+// ---------------- RenderSystem
+// Draws sprites to the screen
+
+extern BaseSystem* renderSystem;
+
+// Tick update for RenderSystem
+void RenderSystemUpdate(float dt);
+
+#define S_RENDER 7
+#define SIGNATURE_RENDER (SG(C_TRANSFORM) | SG(C_SPRITE))
+
 // ---------------- AnimationSystem
 
 typedef unsigned int AnimationID;
@@ -73,8 +84,19 @@ extern BaseSystem* animationSystem;
 // Tick update for AnimationSystem
 void AnimationSystemUpdate(float dt);
 
-#define S_ANIMATION 2
+#define S_ANIMATION 3
 #define SIGNATURE_ANIMATION (SG(C_SPRITE) | SG(C_ANIMATOR))
+
+// ---------------- PlayerControllerSystem
+// Handles all the player control
+
+extern BaseSystem* playerControllerSystem;
+
+// Tick update for PlayerControllerSystem
+void PlayerControllerSystemUpdate(float dt);
+
+#define S_PLAYERCONTROLLERSYSTEM 4
+#define SIGNATURE_PLAYERCONTROLLER (SG(C_PLAYER))
 
 // ---------------- EntityDamageSystem
 
@@ -91,13 +113,103 @@ extern BaseSystem* entityDamageSystem;
 // Tick update for EntityDamageSystem
 void EntityDamageSystemUpdate(float dt);
 
-#define S_ENTITYDAMAGE 3
+#define S_ENTITYDAMAGE 5
 #define SIGNATURE_ENTITYDAMAGE (SG(C_HEALTH))
+
+// ---------------- BreakableSystem
+// Breakables have a transform/rigidbody, health, sprite, and either type of collider.
+// They also don't have the Enemy tag.
+// Must decrement health with the sprite.
+
+extern BaseSystem* breakableSystem;
+
+// Tick update for BreakableSystem
+void BreakableSystemUpdate(float dt);
+
+#define S_BREAKABLESYSTEM 6
+#define SIGNATURE_BREAKABLE (SG(C_TRANSFORM) | SG(C_RIGIDBODY) | SG(C_HEALTH) | SG(C_SPRITE))
+
+// ---------------- EnemyControllerSystem
+// All enemies other than the boss are relatively simple so this just handles all of em
+
+extern BaseSystem* enemyControllerSystem;
+
+// Tick update for EnemyControllerSystem
+void EnemyControllerSystemUpdate(float dt);
+
+#define S_ENEMYCONTROLLERSYSTEM 7
+#define SIGNATURE_ENEMYCONTROLLER (SG(C_ENEMY))
+
+// ---------------- BossControllerSystem
+// Controls the boss
+
+extern BaseSystem* bossControllerSystem;
+
+// Tick update for BossControllerSystem
+void BossControllerSystemUpdate(float dt);
+
+#define S_BOSSCONTROLLERSYSTEM 8
+#define SIGNATURE_BOSSCONTROLLER (SG(C_BOSS))
+
+// ---------------- RaftControllerSystem
+// Controls the raft
+
+extern BaseSystem* raftControllerSystem;
+
+// Tick update for RaftControllerSystem
+void RaftControllerSystemUpdate(float dt);
+
+#define S_RAFTCONTROLLERSYSTEM 9
+#define SIGNATURE_RAFTCONTROLLER (SG(C_RAFT))
+
+// ---------------- FallingPlatformSystem
+// Controls falling platforms to enable gravity on player collision
+
+extern BaseSystem* fallingPlatformSystem;
+
+// Tick update for FallingPlatformSystem
+void FallingPlatformSystemUpdate(float dt);
+
+#define S_FALLINGPLATFORM 10
+#define SIGNATURE_FALLINGPLATFORM (SG(C_PLATFORM))
+
+// ---------------- CollectibleSystem
+// Triggers collectibles on collision
+
+extern BaseSystem* collectibleSystem;
+
+// Tick update for CollectibleSystem
+void CollectibleSystemUpdate(float dt);
+
+#define S_COLLECTIBLE 11
+#define SIGNATURE_COLLECTIBLE (SG(C_COLLECTIBLE))
+
+// ---------------- DestroyOffscreenSystem
+// Destroys objects when they fall offscreen
+
+extern BaseSystem* destroyOffscreenSystem;
+
+// Tick update for DestroyOffscreenSystem
+void DestroyOffscreenSystemUpdate(float dt);
+
+#define S_DESTROYOFFSCREEN 12
+#define SIGNATURE_DESTROYOFFSCREEN (SG(C_DESTROYOFFSCREEN))
+
+// ---------------- AudioSystem
+// Handles playing and looping audio sources
+
+extern BaseSystem* audioSystem;
+
+// Tick update for AudioSystem
+void AudioSystemUpdate(float dt);
+
+#define S_AUDIO 13
+#define SIGNATURE_AUDIO (SG(C_AUDIOSOURCE))
 
 // ---------------- Extra stuff
 
 // How many unique types of systems exist
-#define SYSTEM_TYPE_COUNT 1
+#define SYSTEM_TYPE_COUNT 13
 
 // System ID matching the macros in this file
 typedef unsigned char SystemID;
