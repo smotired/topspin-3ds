@@ -1,7 +1,7 @@
 /// Contains definitions for components.
 #pragma once;
 
-#include "vec2.h"
+#include "smath.h"
 
 // ID of an entity.
 // Importantly: the id 0 is reserved.
@@ -21,9 +21,9 @@ typedef struct {
 // Component ID: 2
 typedef struct {
     // The actual sprite
-    char spr;
+    unsigned char spr;
     // If the sprite should be flipped horizontally
-    int flipX;
+    bool flipX;
 } Sprite;
 #define C_SPRITE 2
 
@@ -31,11 +31,13 @@ typedef struct {
 // Component ID: 3
 typedef struct {
     // ID of the animation, which is defined globally.
-    int animation;
+    unsigned int animation;
     // Time in seconds through this animation
     float time;
 } Animator;
 #define C_ANIMATOR 3
+
+typedef enum { COL_SOLID, COL_ZONE, COL_SEMISOLID } ColliderType;
 
 // Collider information for an AABB
 // Component ID: 4
@@ -45,7 +47,7 @@ typedef struct {
     // Width and height of the box
     Vec2 size;
     // Solidity. 0 = solid, 1 = zone, 2 = semisolid (only collide from top)
-    char type;
+    ColliderType type;
 } BoxCollider;
 #define C_BOXCOLLIDER 4
 
@@ -56,6 +58,8 @@ typedef struct {
     Vec2 offset;
     // Radius of the circle
     float radius;
+    // Solidity. 0 = solid, 1 = zone, 2 = semisolid (only collide from top)
+    ColliderType type;
 } CircleCollider;
 #define C_CIRCLECOLLIDER 5
 
@@ -64,10 +68,14 @@ typedef struct {
 typedef struct {
     // How quickly the object is moving
     Vec2 velocity;
-    // If the object should be affected by gravity
-    int useGravity;
-    // If the object is immobile
-    int immobile;
+    // Boolean object flags
+    // 1 - immovable
+    // 2 - unaffected by gravity
+    unsigned char flags;
+    // The 16x16 spatial partition the entity is currently in, used for broad phase collision checking
+    // 1-indexed in both dimensions and both directions from 0 for clarity.
+    // So the partition (1, 1) covers the range [0, 16) in both x and y, and the partition (-1, -1) covers the range [-16, 0) in both x and y, etc.
+    Vec2Int partition;
 } Rigidbody;
 #define C_RIGIDBODY 6
 
@@ -79,15 +87,15 @@ typedef struct {
 } Health;
 #define C_HEALTH 7
 
-// Coins, gems, and stars have animations
+// Coins, gems, and stars have similar properties
 // Component ID: 8
 typedef struct {
     // If the object has been collected and is currently playing the animation
-    int collected;
-    // Type of the collectable. 0 = coin, 1-3 = types of gem, 4 = star
-    char type;
-} Collectable;
-#define C_COLLECTABLE 8
+    bool collected;
+    // Type of the collectible. 0 = coin, 1-3 = types of gem, 4 = star
+    unsigned char type;
+} Collectible;
+#define C_COLLECTIBLE 8
 
 // Falling platforms just store if they are triggered or not
 // Component ID: 9
@@ -95,10 +103,12 @@ typedef struct {
 
 #define C_PLATFORM 9
 
+typedef enum { PLR_STANDING, PLR_WALKING, PLR_MIDAIR, PLR_MIDAIR_JUMPDASH, PLR_WALLSLIDE, PLR_CROUCHING, PLR_PREPDASH, PLR_DASH, PLR_DEAD } PlayerState;
+
 // Stores all data about a player
 // Component ID: 10
 typedef struct {
-    // Enum for player state
+    // Enum for player state (not bit flags)
     // 0 - standing
     // 1 - walking
     // 2 - midair
@@ -108,7 +118,7 @@ typedef struct {
     // 6 - preparing dash
     // 7 - dash
     // 8 - dead
-    char state;
+    PlayerState state;
     // If dashing, this is the normalized vector we are dashing toward
     Vec2 dashDirection;
 } Player;
@@ -120,6 +130,8 @@ typedef struct {
 
 #define C_ENEMY 11
 
+typedef enum { BUMBLE_REGULAR, BUMBLE_HAT, BUMBLE_FLYING, BUMBLE_HELMET } BumbleType;
+
 // Bumble definition
 // Component ID: 12
 typedef struct {
@@ -128,7 +140,7 @@ typedef struct {
     // 1 - dumble (2 health, converted to bumble when jumping on head)
     // 2 - fumble (2 health, not affected by gravity, converted to bumble when jumping on head)
     // 3 - gumble (unkillable, unaffected when jumping on head)
-    char type;
+    BumbleType type;
     // Direction
     float direction;
 } Bumble;
@@ -141,6 +153,7 @@ typedef struct {
     float defaultHeight;
     // ID of the ground-like collider that moves with the drillbug and allows the player to stand
     Entity platform;
+    // ID of the drillbug's detection zone, a box collider reaching from slightly above the defaultHeight to the nearest ground
 } Drillbug;
 #define C_DRILLBUG 13
 
@@ -148,7 +161,7 @@ typedef struct {
 // Component ID: 14
 typedef struct {
     // How many shields the boss has left
-    char shieldsLeft;
+    unsigned char shieldsLeft;
     // How far left the boss should move
     float leftBound;
     // How far right the boss should move
@@ -165,7 +178,7 @@ typedef struct {
 // Component ID: 15
 typedef struct {
     // How many enemies are currently on the raft
-    int count;
+    unsigned int count;
 } Raft;
 #define C_RAFT 15
 
@@ -174,12 +187,12 @@ typedef struct {
 typedef struct {
     // ID of the audio clip
     char clip;
-    // If the clip is currently playing
-    int playing;
-    // If the clip should loop
-    int loop;
     // Current play time of the clip
     float time;
+    // Flags for this audio source
+    // 1 = if this audio source is paused
+    // 2 = if the audio source should loop
+    unsigned char flags
 } AudioSource;
 #define C_AUDIOSOURCE 16
 

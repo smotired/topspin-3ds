@@ -1,5 +1,10 @@
 #pragma once;
 
+// Boolean shorthand
+#define true 1
+#define false 0
+typedef int bool;
+
 // 2D float vector struct
 typedef struct {
     float x;

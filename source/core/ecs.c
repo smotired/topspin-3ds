@@ -189,7 +189,7 @@ void ComponentManager_Init() {
     InitComponentList(C_CIRCLECOLLIDER, sizeof(CircleCollider));
     InitComponentList(C_RIGIDBODY, sizeof(Rigidbody));
     InitComponentList(C_HEALTH, sizeof(Health));
-    InitComponentList(C_COLLECTABLE, sizeof(Collectable));
+    InitComponentList(C_COLLECTIBLE, sizeof(Collectible));
     InitComponentList(C_PLAYER, sizeof(Player));
     InitComponentList(C_BUMBLE, sizeof(Bumble));
     InitComponentList(C_DRILLBUG, sizeof(Drillbug));

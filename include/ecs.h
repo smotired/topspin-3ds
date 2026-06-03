@@ -3,7 +3,7 @@
 #pragma once
 
 #include "component.h"
-#include "system.h"
+#include "systems.h"
 
 // The maximum count of entities that can exist at one time
 // If static ground and goop tiles are stored as tilemaps unrelated to the ECS,
@@ -77,7 +77,7 @@ void ECSCleanup();
 #define GetCircleCollider(e) ((CircleCollider*)GetComponent(e, C_CIRCLECOLLIDER))
 #define GetRigidbody(e) ((Rigidbody*)GetComponent(e, C_RIGIDBODY))
 #define GetHealth(e) ((Health*)GetComponent(e, C_HEALTH))
-#define GetCollectable(e) ((Collectable*)GetComponent(e, C_COLLECTABLE))
+#define GetCollectible(e) ((Collectible*)GetComponent(e, C_COLLECTIBLE))
 #define GetPlayer(e) ((Player*)GetComponent(e, C_PLAYER))
 #define GetBumble(e) ((Bumble*)GetComponent(e, C_BUMBLE))
 #define GetDrillbug(e) ((Drillbug*)GetComponent(e, C_DRILLBUG))
