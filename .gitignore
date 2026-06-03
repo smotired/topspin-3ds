@@ -56,3 +56,10 @@ dkms.conf
 
 # clion files
 .idea
+
+# build stuff
+build
+romfs
+*.smdh
+*.3dsx
+run.sh
