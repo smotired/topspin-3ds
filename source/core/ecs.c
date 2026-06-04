@@ -1,6 +1,6 @@
 // Source file for the Entity Component System.
 
-#include "../include/ecs.h" // TODO: create an actual include path
+#include "ecs.h"
 #include <stdlib.h>
 #include <string.h>
 

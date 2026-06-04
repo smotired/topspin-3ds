@@ -1,8 +1,8 @@
 /// Physics system implementation. Handles movement and collisions.
 // All entities tracked by the physics system have a Transform and Rigidbody component.
 
-#include "../../include/systems.h"
-#include "../../include/ecs.h"
+#include "systems.h"
+#include "ecs.h"
 #include <stdlib.h>
 #include <math.h>
 

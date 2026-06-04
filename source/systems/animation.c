@@ -1,8 +1,8 @@
 /// Source for the AnimationSystem
 
-#include "../../include/systems.h"
-#include "../../include/ecs.h"
-#include "../../include/rendering.h"
+#include "systems.h"
+#include "ecs.h"
+#include "rendering.h"
 
 AnimationFinishEvent animationFinishEvents[MAX_EVENTS];
 unsigned char animationFinishEventCount;

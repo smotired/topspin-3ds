@@ -1,4 +1,4 @@
-#include "../../include/smath.h"
+#include "smath.h"
 #include <math.h>
 
 Vec2 v2add(Vec2 a, Vec2 b) {
