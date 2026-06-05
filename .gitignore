@@ -64,3 +64,4 @@ romfs
 *.3dsx
 run.sh
 /.vs
+/.vscode
