@@ -3,7 +3,6 @@
 #pragma once
 
 #include "component.h"
-#include "systems.h"
 
 // The maximum count of entities that can exist at one time
 // If static ground and goop tiles are stored as tilemaps unrelated to the ECS,
@@ -13,6 +12,9 @@
 
 // Signature of a destroyed entity (which limits unique component count to 31)
 #define NULL_SIGNATURE 0xFFFFFFFF
+
+// Error code
+extern unsigned char ecsErr;
 
 // Common information to all systems. Each system should keep a reference to this object.
 typedef struct {
@@ -26,6 +28,12 @@ typedef struct {
     // Amount of entities tracked by this system.
     Entity entityCount;
 } BaseSystem;
+
+// How many unique types of systems exist
+#define SYSTEM_TYPE_COUNT 13
+
+// System ID matching the macros in this file
+typedef unsigned char SystemID;
 
 // Methods for each required function of the ECS
 

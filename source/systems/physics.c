@@ -48,8 +48,8 @@ bool FindCollision(Entity e1, Entity e2, CollisionEvent* event) {
 
             // Penetration distance is the minimum distance to each corner
             Vec2 penBL = v2sub(event->position, t2Min);
-            Vec2 penTR = v2sub(t2Min, event->position);
-            event->penetration = min(min(penBL.x, penTR.x), min(penBL.y, penTR.y));
+            Vec2 penTR = v2sub(t2Max, event->position);
+            event->penetration = fmin(fmin(penBL.x, penTR.x), fmin(penBL.y, penTR.y));
             
             // Collision normal is the normal of the face on c2 with the least penetration
             if      (event->penetration == penBL.x) event->normal = (Vec2) { -1,  0 };

@@ -1,5 +1,5 @@
 /// Contains definitions for components.
-#pragma once;
+#pragma once
 
 #include "smath.h"
 

@@ -3,8 +3,7 @@
 
 #include "smath.h"
 #include "component.h"
-
-typedef struct BaseSystem;
+#include "ecs.h"
 
 // Maximum events that can occur per frame.
 #define MAX_EVENTS 32
@@ -205,11 +204,3 @@ void AudioSystemUpdate(float dt);
 
 #define S_AUDIO 13
 #define SIGNATURE_AUDIO (SG(C_AUDIOSOURCE))
-
-// ---------------- Extra stuff
-
-// How many unique types of systems exist
-#define SYSTEM_TYPE_COUNT 13
-
-// System ID matching the macros in this file
-typedef unsigned char SystemID;
