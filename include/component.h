@@ -79,6 +79,9 @@ typedef struct {
 } Rigidbody;
 #define C_RIGIDBODY 6
 
+#define RBF_IMMOBILE 1
+#define RBF_NO_GRAVITY 2
+
 // Shows how much health an enemy or breakable object has
 // Component ID: 7
 typedef struct {
@@ -192,7 +195,7 @@ typedef struct {
     // Flags for this audio source
     // 1 = if this audio source is paused
     // 2 = if the audio source should loop
-    unsigned char flags
+    unsigned char flags;
 } AudioSource;
 #define C_AUDIOSOURCE 16
 

@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "game.h"
+
 int main() {
 	// Init libs
 	romfsInit();
@@ -18,7 +20,11 @@ int main() {
 	// Create screens
 	C3D_RenderTarget* top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
 
-	printf("\x1b[8;1HInitialized");
+	printf("\x1b[8;1HSystem Initialized");
+
+	GameInit();
+
+	printf("\x1b[9;1HGame Initialized");
 
 	// Main loop
 	while (aptMainLoop())
@@ -30,12 +36,17 @@ int main() {
 		if (kDown & KEY_START)
 			break; // break in order to return to hbmenu
 
-		// Render a frame with solid blue
+		// Render a frame
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 		C2D_TargetClear(top, C2D_Color32f(0.0f, 0.0f, 1.0f, 1.0f));
 		C2D_SceneBegin(top);
+
+		GameTick(0.0166667f); // assume 60fps for now, later get actual time since last tick
+
 		C3D_FrameEnd(0);
 	}
+
+	GameDeinit();
 
 	// Deinit libs
 	C2D_Fini();
