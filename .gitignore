@@ -63,3 +63,4 @@ romfs
 *.smdh
 *.3dsx
 run.sh
+/.vs
