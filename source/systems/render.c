@@ -17,7 +17,7 @@ void RenderSystemUpdate(float dt) {
     for (unsigned int i = 1; i < renderSystem->entityCount; i++) {
         Entity e = renderSystem->tracked[i];
         Transform* transform = GetTransform(e);
-        Sprite* sprite = GetSprite(e);
+        // Sprite* sprite = GetSprite(e);
 
         // TEMPORARY: Fill in with white based on collider
         u32 white = C2D_Color32f(1.0f, 1.0f, 1.0f, 1.0f);

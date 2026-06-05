@@ -18,7 +18,7 @@ BaseSystem* physicsSystem;
 #define GRAVITY 9.8f
 
 /// Method to find the collision between two entities with colliders in adjacent spatial partitions.
-bool FindCollision(Entity e1, Entity e2, CollisionEvent* event) {
+int FindCollision(Entity e1, Entity e2, CollisionEvent* event) {
     // Update entities
     event->object1 = e1;
     event->object2 = e2;
@@ -161,7 +161,6 @@ void PhysicsSystemUpdate(float dt) {
     // Loop through all pairs of entities with both rigidbodies and colliders.
     for (unsigned int i = 1; i < physicsSystem->entityCount; i++) {
         Entity e1 = physicsSystem->tracked[i];
-        Transform* t1 = GetTransform(e1);
         Rigidbody* r1 = GetRigidbody(e1);
 
         // Check if this entity has a collider
@@ -174,7 +173,6 @@ void PhysicsSystemUpdate(float dt) {
         // Loop through all other rigidbodies
         for (unsigned int j = i + 1; j < physicsSystem->entityCount; j++) {
             Entity e2 = physicsSystem->tracked[j];
-            Transform* t2 = GetTransform(e2);
             Rigidbody* r2 = GetRigidbody(e2);
 
             // Check if the other entity has a collider
@@ -202,8 +200,8 @@ void PhysicsSystemUpdate(float dt) {
         CollisionEvent* e = &collisionEvents[i];
 
         // If Entity 1 is a semisolid, swap to make sure e2 is the semisolid, before we do any pointer dereferencing
-        if (HasComponent(e->object1, C_BOXCOLLIDER) && GetBoxCollider(e->object1)->type == COL_SEMISOLID ||
-            HasComponent(e->object1, C_CIRCLECOLLIDER) && GetCircleCollider(e->object1)->type == COL_SEMISOLID) {
+        if ((HasComponent(e->object1, C_BOXCOLLIDER) && GetBoxCollider(e->object1)->type == COL_SEMISOLID) ||
+            (HasComponent(e->object1, C_CIRCLECOLLIDER) && GetCircleCollider(e->object1)->type == COL_SEMISOLID)) {
             // Swap object 1 and object 2 in the event
             Entity temp = e->object1;
             e->object1 = e->object2;
@@ -215,14 +213,12 @@ void PhysicsSystemUpdate(float dt) {
         Rigidbody* r1 = GetRigidbody(e->object1);
         BoxCollider* cb1 = HasComponent(e->object1, C_BOXCOLLIDER) ? GetBoxCollider(e->object1) : NULL;
         CircleCollider* cc1 = HasComponent(e->object1, C_CIRCLECOLLIDER) ? GetCircleCollider(e->object1) : NULL;
-        void* col1 = cb1 != NULL ? (void*)cb1 : (void*)cc1;
         ColliderType type1 = cb1 != NULL ? cb1->type : cc1->type;
 
         Transform* t2 = GetTransform(e->object2);
         Rigidbody* r2 = GetRigidbody(e->object2);
         BoxCollider* cb2 = HasComponent(e->object2, C_BOXCOLLIDER) ? GetBoxCollider(e->object2) : NULL;
         CircleCollider* cc2 = HasComponent(e->object2, C_CIRCLECOLLIDER) ? GetCircleCollider(e->object2) : NULL;
-        void* col2 = cb2 != NULL ? (void*)cb2 : (void*)cc2;
         ColliderType type2 = cb2 != NULL ? cb2->type : cc2->type;
 
         // Skip zone collisions
@@ -246,8 +242,8 @@ void PhysicsSystemUpdate(float dt) {
         // Handle solid collisions
         else {
             // Move objects backward on the collision normal such that they don't overlap
-            bool imm1 = r1->flags & 1;
-            bool imm2 = r2->flags & 1;
+            int imm1 = r1->flags & 1;
+            int imm2 = r2->flags & 1;
             if (!imm1 && !imm2) {
                 t1->pos = v2add(t1->pos, v2scale(e->normal, e->penetration));
                 t2->pos = v2add(t2->pos, v2scale(e->normal, -e->penetration));
