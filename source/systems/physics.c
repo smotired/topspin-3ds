@@ -67,6 +67,8 @@ int FindCollision(Entity e1, Entity e2, CollisionEvent* event) {
     else if (HasComponent(e1, C_BOXCOLLIDER) || HasComponent(e2, C_BOXCOLLIDER)) {
         // Swap so that e1 is the circle collider
         if (HasComponent(e2, C_CIRCLECOLLIDER)) { Entity temp = e1; e1 = e2; e2 = temp; }
+        event->object1 = e1;
+        event->object2 = e2;
 
         // Circle vs AABB collision with same assumption as above.
         Transform* t1 = GetTransform(e1);

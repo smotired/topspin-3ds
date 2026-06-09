@@ -37,12 +37,24 @@ void GameInit() {
     b_t->pos = (Vec2) { 12.5, 12.5 };
 
     BoxCollider* b_col = (BoxCollider*)AddComponent(block, C_BOXCOLLIDER);
-    b_col->size = (Vec2) { 3, 1 };
+    b_col->size = (Vec2) { 9, 1 };
 
     Rigidbody* b_rb = (Rigidbody*)AddComponent(block, C_RIGIDBODY);
     b_rb -> flags |= RBF_IMMOBILE; // immobile
 
     AddComponent(block, C_SPRITE);
+
+    Entity circle = CreateEntity();
+
+    Transform* c_t = (Transform*)AddComponent(circle, C_TRANSFORM);
+    c_t->pos = (Vec2) { 11.9, 2.5 };
+
+    CircleCollider* c_col = (CircleCollider*)AddComponent(circle, C_CIRCLECOLLIDER);
+    c_col->radius = 0.5f;
+
+    AddComponent(circle, C_RIGIDBODY);
+
+    AddComponent(circle, C_SPRITE);
 }
 
 void GameTick(float dt) {
